@@ -1,77 +1,36 @@
-Protocol Buffers - Google's data interchange format
-===================================================
+# Protobufs + Emscripten
 
-[![Build Status](https://travis-ci.org/google/protobuf.svg?branch=master)](https://travis-ci.org/google/protobuf) [![Build status](https://ci.appveyor.com/api/projects/status/73ctee6ua4w2ruin?svg=true)](https://ci.appveyor.com/project/protobuf/protobuf) [![Build Status](https://grpc-testing.appspot.com/buildStatus/icon?job=protobuf_branch)](https://grpc-testing.appspot.com/job/protobuf_branch)
+## About
 
-Copyright 2008 Google Inc.
+This repository contains edits to the Google Protobuf library (https://github.com/google/protobuf)
+that allow it to be compiled using Emscripten (https://github.com/kripken/emscripten) so that
+you can link against it in Emscripten-compiled projects that require protobufs.
 
-https://developers.google.com/protocol-buffers/
+The changes introduced mostly just shim thread primatives, and are introduced in the most unobtrusive way
+so that on version bumps to the protobufs library this repository can simply be rebased.  
 
-Overview
---------
+This was heavily inspired by https://github.com/invokr/protobuf-emscripten , I created a separate repo to
+pin protobufs at 3.x, clarify the readme, and include the full commit history to make rebasing easier.
 
-Protocol Buffers (a.k.a., protobuf) are Google's language-neutral,
-platform-neutral, extensible mechanism for serializing structured data. You
-can find [protobuf's documentation on the Google Developers site](https://developers.google.com/protocol-buffers/).
+## Compiling
 
-This README file contains protobuf installation instructions. To install
-protobuf, you need to install the protocol compiler (used to compile .proto
-files) and the protobuf runtime for your chosen programming language.
+Download this repository and run
 
-Protocol Compiler Installation
-------------------------------
+```
+$ ./autogen.sh
+$ emconfigure ./configure --with-protoc=protoc
+$ emmake make
+```
 
-The protocol compiler is written in C++. If you are using C++, please follow
-the [C++ Installation Instructions](src/README.md) to install protoc along
-with the C++ runtime.
+*Note: You need to pass the `--with-protoc` flag pointing to a pre-compiled protoc binary. This is because during compilation, protobufs run the protoc they just compiled (in order to build protobufs for testcases); however, since we compiled protoc with emscripten to output LLVM-IR (instead of a valid, executable binary), the compiled protoc will be unable to run on the host machine. To get around this, we must pass a precompiled protoc.*
 
-For non-C++ users, the simplest way to install the protocol compiler is to
-download a pre-built binary from our release page:
+This will create a file in `./src/.libs/libprotobuf.a` that you can link against with `emcc`.
 
-  [https://github.com/google/protobuf/releases](https://github.com/google/protobuf/releases)
+## Linking
 
-In the downloads section of each release, you can find pre-built binaries in
-zip packages: protoc-$VERSION-$PLATFORM.zip. It contains the protoc binary
-as well as a set of standard .proto files distributed along with protobuf.
+Once you've run the compile steps above you can link against the generated file using
+`emcc my_file.cc -o my_file.js ../path/to/protobuf-emscripten/src/.libs/libprotobuf.a`
 
-If you are looking for an old version that is not available in the release
-page, check out the maven repo here:
+## Author
 
-  [http://repo1.maven.org/maven2/com/google/protobuf/protoc/](http://repo1.maven.org/maven2/com/google/protobuf/protoc/)
-
-These pre-built binaries are only provided for released versions. If you want
-to use the github master version at HEAD, or you need to modify protobuf code,
-or you are using C++, it's recommended to build your own protoc binary from
-source.
-
-If you would like to build protoc binary from source, see the [C++ Installation
-Instructions](src/README.md).
-
-Protobuf Runtime Installation
------------------------------
-
-Protobuf supports several different programming languages. For each programming
-language, you can find instructions in the corresponding source directory about
-how to install protobuf runtime for that specific language:
-
-| Language                             | Source                                                |
-|--------------------------------------|-------------------------------------------------------|
-| C++ (include C++ runtime and protoc) | [src](src)                                            |
-| Java                                 | [java](java)                                          |
-| Python                               | [python](python)                                      |
-| Objective-C                          | [objectivec](objectivec)                              |
-| C#                                   | [csharp](csharp)                                      |
-| JavaNano                             | [javanano](javanano)                                  |
-| JavaScript                           | [js](js)                                              |
-| Ruby                                 | [ruby](ruby)                                          |
-| Go                                   | [golang/protobuf](https://github.com/golang/protobuf) |
-| PHP                                  | [php](php)                                            |
-
-
-Usage
------
-
-The complete documentation for Protocol Buffers is available via the
-web at:
-
-    https://developers.google.com/protocol-buffers/
+Tomas Reimers, September 2016
